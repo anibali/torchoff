@@ -1,5 +1,6 @@
 local argcheck = require('argcheck')
 local base64 = require('base64')
+local image = require('image')
 
 local map = function(collection, func)
   local mapped_collection = {}
@@ -59,7 +60,7 @@ local logshowoff = argcheck{
           if frame_data ~= nil then
             local template =
               '<img src=data:image/jpeg;base64,%s>'
-            local image_b64 = base64.encode(image.compressJPG(frame_data):char():storage():string())
+            local image_b64 = base64.encode(image.compressJPG(frame_data, 90):char():storage():string())
             frame.inst:html(string.format(template, image_b64))
           end
         elseif frame.type == 'progress' then

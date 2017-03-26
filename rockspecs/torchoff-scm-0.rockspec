@@ -25,6 +25,6 @@ build = {
     ['torchoff.Notebook'] = 'src/torchoff/Notebook.lua',
     ['torchoff.env'] = 'src/torchoff/env.lua',
     ['torchoff.tnt.Telemetry'] = 'src/torchoff/tnt/Telemetry.lua',
-    ['torchoff.tnt.logshowoff'] = 'src/torchoff/tnt/logshowoff.lua'
+    ['torchoff.tnt.LogShowoff'] = 'src/torchoff/tnt/LogShowoff.lua'
   }
 }

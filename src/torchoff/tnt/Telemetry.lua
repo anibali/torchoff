@@ -39,9 +39,10 @@ Telemetry.__init = argcheck{
   {name = 'title', type = 'string'},
   {name = 'meters', type = 'table'},
   {name = 'misc_frames', type = 'table', default = {}},
-  {name = 'torchoff_client', type = 'torchoff.Client', optional = 'true'},
+  {name = 'torchoff_client', type = 'torchoff.Client', opt = true},
+  {name = 'graph_x_title', type = 'string', default = 'Epoch'},
   call =
-function(self, title, meters, misc_frames, torchoff_client)
+function(self, title, meters, misc_frames, torchoff_client, graph_x_title)
   local log_keys = {'epoch', 'progress'}
   local log_flush_handlers = {}
   local log_set_handlers = {}
@@ -69,7 +70,7 @@ function(self, title, meters, misc_frames, torchoff_client)
   -- Showoff log
 
   if torchoff_client then
-    local log_showoff = require('torchoff.tnt.logshowoff')
+    local LogShowoff = require('torchoff.tnt.LogShowoff')
 
     local notebook = torchoff_client:new_notebook(title)
 
@@ -86,19 +87,20 @@ function(self, title, meters, misc_frames, torchoff_client)
             frame = {
               type = 'vegalite',
               title = group_name,
-              data = flat_name
             }
           else
             frame = {
               type = 'graph',
               title = group_name,
-              x_title = 'Epoch',
+              x_title = graph_x_title,
               x_data = {},
               y_title = group_name,
               y_data = {},
               series_names = {},
             }
           end
+
+          frame.name = flat_name
         end
 
         table.insert(log_keys, flat_name)
@@ -112,12 +114,28 @@ function(self, title, meters, misc_frames, torchoff_client)
       table.insert(frames, frame)
     end
 
-    for key, frame_type in pairs(misc_frames) do
+    for key, frame_opts in pairs(misc_frames) do
+      local frame_type = frame_opts
+      local autoflush = true
+      local title = key
+      local bounds = nil
+
+      if type(frame_opts) == 'table' then
+        frame_type = frame_opts.type
+        if frame_opts.autoflush ~= nil then
+          autoflush = frame_opts.autoflush
+        end
+        title = frame_opts.title or title
+        bounds = frame_opts.bounds or bounds
+      end
+
       table.insert(log_keys, key)
       table.insert(frames, {
         type = frame_type,
-        title = key,
-        data = key
+        title = title,
+        autoflush = autoflush,
+        bounds = bounds,
+        name = key,
       })
     end
 
@@ -125,21 +143,18 @@ function(self, title, meters, misc_frames, torchoff_client)
       frame.bounds = get_frame_bounds(i)
     end
 
-    table.insert(log_flush_handlers,
-      log_showoff{
-        notebook = notebook,
-        frames = frames
-      }
-    )
+    table.insert(frames, {
+      type = 'progress',
+      title = 'Progress',
+      name = 'progress',
+      bounds = {x = 0, y = 924, width = 1920, height = 64},
+      autoflush = true,
+    })
 
-    local progress_frame = notebook:new_frame(
-      'Progress', {x = 0, y = 924, width = 1920, height = 64})
-
-    table.insert(log_set_handlers, function(log, key, value)
-      if key == 'progress' then
-        progress_frame:progress(value, 1)
-      end
-    end)
+    local log_showoff = LogShowoff.new(notebook, frames)
+    table.insert(log_set_handlers, log_showoff:create_set_handler())
+    table.insert(log_flush_handlers, log_showoff:create_flush_handler())
+    self.log_showoff = log_showoff
   end
 
   local log = tnt.Log{
@@ -151,6 +166,18 @@ function(self, title, meters, misc_frames, torchoff_client)
   self.log = log
   self.meters = meters
   self.epoch = 1
+end}
+
+Telemetry.flush_frames = argcheck{
+  {name = 'self', type = 'torchoff.tnt.Telemetry'},
+  {name = 'frame_names', type = 'table'},
+  call =
+function(self, frame_names)
+  assert(self.log_showoff, 'Telemetry not configured for Showoff logging')
+
+  for i, frame_name in ipairs(frame_names) do
+    self.log_showoff:update_frame_by_name(frame_name)
+  end
 end}
 
 Telemetry.progress = argcheck{

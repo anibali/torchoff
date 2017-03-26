@@ -78,6 +78,10 @@ function LogShowoff:update_frame(frame, value)
     else
       frame.inst:text(table.concat(history[frame.name], '\n'))
     end
+  elseif frame.type == 'html' then
+    if value ~= nil then
+      frame.inst:html(value)
+    end
   else
     error('Unrecognised frame type: ' .. frame.type)
   end

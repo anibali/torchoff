@@ -139,10 +139,6 @@ function(self, title, meters, misc_frames, torchoff_client, graph_x_title)
       })
     end
 
-    for i, frame in ipairs(frames) do
-      frame.bounds = get_frame_bounds(i)
-    end
-
     table.insert(frames, {
       type = 'progress',
       title = 'Progress',
@@ -150,6 +146,20 @@ function(self, title, meters, misc_frames, torchoff_client, graph_x_title)
       bounds = {x = 0, y = 924, width = 1920, height = 64},
       autoflush = true,
     })
+
+    table.sort(frames, function(a, b)
+      if a.bounds == nil and b.bounds ~= nil then
+        return true
+      end
+      if a.bounds ~= nil and b.bounds == nil then
+        return false
+      end
+      return a.name < b.name
+    end)
+
+    for i, frame in ipairs(frames) do
+      frame.bounds = frame.bounds or get_frame_bounds(i)
+    end
 
     local log_showoff = LogShowoff.new(notebook, frames)
     table.insert(log_set_handlers, log_showoff:create_set_handler())

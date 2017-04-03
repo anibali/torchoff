@@ -73,6 +73,7 @@ function(self, title, meters, misc_frames, torchoff_client, graph_x_title)
     local LogShowoff = require('torchoff.tnt.LogShowoff')
 
     local notebook = torchoff_client:new_notebook(title)
+    self.notebook = notebook
 
     local frames = {}
 
